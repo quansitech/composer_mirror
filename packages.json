@@ -1,0 +1,75 @@
+{
+    "info": "",
+    "last-update": "2023-09-06 16:49:12",
+    "list": "https://packagist.org/packages/list.json",
+    "metadata-changes-url": "https://packagist.org/metadata/changes.json",
+    "metadata-url": "/p2/%package%.json",
+    "mirrors": [
+        {
+            "dist-url": "http://test.tunnel.t4tstudio.com/dists/%package%/%prettyVersion%/%reference%.%type%",
+            "preferred": true
+        }
+    ],
+    "notify-batch": "https://packagist.org/downloads/",
+    "packages": [],
+    "provider-includes": {
+        "p/provider-2013$%hash%.json": {
+            "sha256": "1bae430bae3014d9b480e6d455afdd505ddc7bdc3df0705a3bd55a3e85ec7526"
+        },
+        "p/provider-2014$%hash%.json": {
+            "sha256": "fa84543c02696163b8b0ca4a07a1617bee5f1a8d3f7ad8be4f5501f4d6d2f9be"
+        },
+        "p/provider-2015$%hash%.json": {
+            "sha256": "7854682732ffc7348b6245f7f1f8b630e823b91cd1c987c5d4b4ad636fdb8dc7"
+        },
+        "p/provider-2016$%hash%.json": {
+            "sha256": "4be891d36919277cce8edfef36a72213ea324ef4f5656fff37b46af29226d32d"
+        },
+        "p/provider-2017$%hash%.json": {
+            "sha256": "46944496ccf97287e8e3f28f3bb30b3c77a212d16e3e7baf6d3bf3039149589e"
+        },
+        "p/provider-2018$%hash%.json": {
+            "sha256": "fa9227a37ef02a1d2c88870fbdd734e4bd9d1cb5aadb64f1bf62e62c059aaba1"
+        },
+        "p/provider-2019$%hash%.json": {
+            "sha256": "03c6c88e721cb354d9583da0bfb4e583dcdf5095770bb91972b28f93f386818b"
+        },
+        "p/provider-2020$%hash%.json": {
+            "sha256": "13f861d65005c465657e350c8cb2c4f06394fbf9eb1965961a9a63a8101f0678"
+        },
+        "p/provider-2021$%hash%.json": {
+            "sha256": "62212ae1ef6a4aa626eab74ba01fd78ed490e21f895f2c4991059a9f1f88f2d6"
+        },
+        "p/provider-2022$%hash%.json": {
+            "sha256": "717b8cefb62ef756eeb74463fb2097e9f69317fcf98d2a47e40faaa4518b2da3"
+        },
+        "p/provider-2022-10$%hash%.json": {
+            "sha256": "f521dd8bf1febed58b751911e0574db14f08a7015b59a1019b770f6c27e091ce"
+        },
+        "p/provider-2023-01$%hash%.json": {
+            "sha256": "99f655b850795f600a120b2fe5eaa5dfb502605ddd5b593bb4ab91437fbc1a35"
+        },
+        "p/provider-2023-04$%hash%.json": {
+            "sha256": "97b38e0a3c2284c717e5af09162efa2df1b0ea51ab7f5f466e75b5e964cbb0c2"
+        },
+        "p/provider-2023-07$%hash%.json": {
+            "sha256": "6c0acca0c59511b823dab04291bfc4234477d082d4e928ed83d3c3c526417fa5"
+        },
+        "p/provider-archived$%hash%.json": {
+            "sha256": "2e59bb8f72279c3138205fdff61cbac7c00992e4c69508e484d953bcd8d8aada"
+        },
+        "p/provider-latest$%hash%.json": {
+            "sha256": "75bd735dea1348fcd3c109cba7021fb43ea67cc454391fd5a3dbf44e6e0fca5d"
+        }
+    },
+    "providers-api": "https://packagist.org/providers/%package%.json",
+    "providers-url": "/composer/p/%package%$%hash%.json",
+    "search": "https://packagist.org/search.json?q=%query%&type=%type%",
+    "security-advisories": {
+        "api-url": "https://packagist.org/api/security-advisories/",
+        "metadata": true,
+        "query-all": true
+    },
+    "warning": "Support for Composer 1 is deprecated and some packages will not be available. You should upgrade to Composer 2. See https://blog.packagist.com/deprecating-composer-1-support/",
+    "warning-versions": "<1.99"
+}
