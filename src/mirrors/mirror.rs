@@ -1,8 +1,8 @@
-use axum::response::Response;
 use async_trait::async_trait;
+use axum::response::Response;
 
-use crate::package::Package;
 use crate::dist::Dist;
+use crate::package::Package;
 
 #[async_trait]
 pub trait Mirror {

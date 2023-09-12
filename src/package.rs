@@ -1,7 +1,7 @@
 pub struct Package<'a> {
     pub vendor: &'a str,
     pub package: &'a str,
-    pub full_name: String
+    pub full_name: String,
 }
 
 impl<'a> Package<'a> {
@@ -9,7 +9,7 @@ impl<'a> Package<'a> {
         Self {
             vendor,
             package,
-            full_name: format!("{}/{}", vendor, package)
+            full_name: format!("{}/{}", vendor, package),
         }
     }
 }
