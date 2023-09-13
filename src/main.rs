@@ -39,6 +39,7 @@ async fn main() {
 
     let current_dir = env::current_dir().expect("无法获取当前目录");
     let file_path = current_dir.join("packages.json");
+    println!("{:#?}", file_path);
 
     let mut packages = String::new();
     let mut packages_file = OpenOptions::new()
