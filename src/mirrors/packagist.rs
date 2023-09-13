@@ -1,11 +1,9 @@
-use async_trait::async_trait;
 use axum::{
     body::{boxed, StreamBody},
     http::{HeaderMap, HeaderName, HeaderValue},
     response::{IntoResponse, Response},
 };
 use futures::StreamExt;
-use qiniu_sdk::prelude::UploaderWithCallbacks;
 use qiniu_sdk::{
     upload::{
         apis::credential::Credential, AutoUploader, AutoUploaderObjectParams, UploadManager,
@@ -15,10 +13,8 @@ use qiniu_sdk::{
 };
 use reqwest::{Client, Proxy, Response as ReqwestResponse, StatusCode};
 use serde_json::Value;
-use std::env;
-use std::{io::Cursor, time::Duration};
+use std::time::Duration;
 
-use super::mirror::Mirror;
 use crate::dist::Dist;
 use crate::package::Package;
 
@@ -54,6 +50,16 @@ async fn proxy(url: &str) -> Response {
         .unwrap()
 }
 
+fn redirect(url: &str) -> Response {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        HeaderName::from_static("location"),
+        HeaderValue::try_from(url).unwrap(),
+    );
+    (StatusCode::TEMPORARY_REDIRECT, headers, "").into_response()
+}
+
+#[derive(Clone)]
 pub struct Packagist<'a> {
     packages_meta_url_template: &'a str,
     object_template: &'a str,
@@ -64,14 +70,19 @@ pub struct Packagist<'a> {
 }
 
 impl<'a> Packagist<'a> {
-    pub fn new(domain: &'a str, access_key: &'a str, secret_key: &'a str, bucket_name: &'a str) -> Self {
+    pub fn new(
+        domain: &'a str,
+        access_key: &'a str,
+        secret_key: &'a str,
+        bucket_name: &'a str,
+    ) -> Self {
         Self {
             packages_meta_url_template: "https://packagist.org/p2/%package%.json",
             object_template: "%package%/%version%/%reference%.%dist_type%",
             domain,
             access_key,
             secret_key,
-            bucket_name
+            bucket_name,
         }
     }
 
@@ -106,11 +117,7 @@ impl<'a> Packagist<'a> {
         format!("http://{}/{}", self.domain, self.get_object_name(dist))
     }
 
-    async fn upload(
-        &self,
-        origin_dist_url: &str,
-        dist: &Dist<'a>
-    ) -> bool {
+    async fn upload(&self, origin_dist_url: &str, dist: &Dist<'a>) -> bool {
         let credential = Credential::new(self.access_key, self.secret_key);
 
         let upload_manager = UploadManager::builder(UploadTokenSigner::new_credential_provider(
@@ -146,18 +153,15 @@ impl<'a> Packagist<'a> {
             Err(_) => false,
         }
     }
-}
 
-#[async_trait]
-impl<'a> Mirror for Packagist<'a> {
-    async fn make_package_response(&self, package: &Package) -> Response {
+    pub async fn make_package_response(&self, package: &Package<'a>) -> Response {
         let url = self
             .packages_meta_url_template
             .replace("%package%", &package.full_name);
         proxy(&url).await
     }
 
-    async fn check_dist(&self, dist: &Dist) -> bool {
+    pub async fn check_dist(&self, dist: &Dist<'a>) -> bool {
         let url = self.get_dist_url(dist);
         let response = head(&url).await;
         match response {
@@ -172,27 +176,21 @@ impl<'a> Mirror for Packagist<'a> {
         }
     }
 
-    async fn make_dist_response(&self, dist: &Dist) -> Response {
-        let dist_url = self.get_origin_dist_url(dist).await;
-        match dist_url {
-            Some(dist_url) => {
-                match self.upload(dist_url.as_str(), dist).await {
-                    true => {
-                        let url = self.get_dist_url(dist);
-                        let mut headers = HeaderMap::new();
-                        headers.insert(
-                            HeaderName::from_static("location"),
-                            HeaderValue::try_from(url).unwrap(),
-                        );
-                        (StatusCode::TEMPORARY_REDIRECT, headers, "").into_response()
-                    },
-                    false => {
-                        (StatusCode::NOT_FOUND, HeaderMap::new(), "").into_response()
+    pub async fn make_dist_response(&self, dist: &Dist<'a>) -> Response {
+        let dist_url = self.get_dist_url(dist);
+        match self.check_dist(dist).await {
+            true => redirect(&dist_url),
+            false => {
+                let origin_dist_url = self.get_origin_dist_url(dist).await;
+                match origin_dist_url {
+                    Some(origin_dist_url) => {
+                        match self.upload(origin_dist_url.as_str(), dist).await {
+                            true => redirect(&dist_url),
+                            false => (StatusCode::NOT_FOUND, HeaderMap::new(), "").into_response(),
+                        }
                     }
+                    None => (StatusCode::NOT_FOUND, HeaderMap::new(), "").into_response(),
                 }
-            }
-            None => {
-                (StatusCode::NOT_FOUND, HeaderMap::new(), "").into_response()
             }
         }
     }
@@ -208,8 +206,9 @@ mod tests {
     async fn it_works() {
         let access_key = env::var("ACCESS_KEY").unwrap();
         let secret_key = env::var("SECRET_KEY").unwrap();
-        let bucket_name = env::var("BUCKET").unwrap();;
-        let object_name = "tiderjian/think-core/v12.30.0/35c34ca5af137fa28b151de5b0d839d51c4a1fa9.zip";
+        let bucket_name = env::var("BUCKET").unwrap();
+        let object_name =
+            "tiderjian/think-core/v12.30.0/35c34ca5af137fa28b151de5b0d839d51c4a1fa9.zip";
 
         let credential = Credential::new(access_key, secret_key);
 

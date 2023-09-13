@@ -1,14 +1,13 @@
-use async_trait::async_trait;
 use axum::{
     http::{HeaderMap, HeaderName, HeaderValue},
     response::{IntoResponse, Response},
 };
 use reqwest::{Client, StatusCode};
 
-use super::mirror::Mirror;
 use crate::dist::Dist;
 use crate::package::Package;
 
+#[derive(Clone)]
 pub struct Tencent<'a> {
     packages_meta_url_template: &'a str,
     dist_url_template: &'a str,
@@ -30,11 +29,8 @@ impl<'a> Tencent<'a> {
             .replace("%combine%", &combine)
             .replace("%dist_type%", &dist.dist_type)
     }
-}
 
-#[async_trait]
-impl<'a> Mirror for Tencent<'a> {
-    async fn make_package_response(&self, package: &Package) -> Response {
+    pub async fn make_package_response(&self, package: &Package<'a>) -> Response {
         let url = self
             .packages_meta_url_template
             .replace("%package%", &package.full_name);
@@ -46,7 +42,7 @@ impl<'a> Mirror for Tencent<'a> {
         (StatusCode::TEMPORARY_REDIRECT, headers, "").into_response()
     }
 
-    async fn check_dist(&self, dist: &Dist) -> bool {
+    pub async fn check_dist(&self, dist: &Dist<'a>) -> bool {
         let url = self.get_dist_url(dist);
         let client = Client::new();
         let response = client.head(&url).send().await;
@@ -62,7 +58,7 @@ impl<'a> Mirror for Tencent<'a> {
         }
     }
 
-    async fn make_dist_response(&self, dist: &Dist) -> Response {
+    pub async fn make_dist_response(&self, dist: &Dist<'a>) -> Response {
         let url = self.get_dist_url(dist);
         let mut headers = HeaderMap::new();
         headers.insert(
