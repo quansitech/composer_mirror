@@ -37,17 +37,10 @@ struct Config<'a> {
 async fn main() {
     dotenv().ok();
 
-    let exe_path = env::current_exe().expect("无法获取执行文件路径");
-
-    // 获取执行文件所在目录
-    let exe_dir = exe_path.parent().expect("无法获取执行文件所在目录");
-    let file_path = exe_dir.join("packages.json");
-    println!("{:#?}", file_path);
-
     let mut packages = String::new();
     let mut packages_file = OpenOptions::new()
         .read(true)
-        .open(&file_path)
+        .open("./packages.json")
         .unwrap();
 
     packages_file.read_to_string(&mut packages).unwrap();
