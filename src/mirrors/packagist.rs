@@ -20,7 +20,6 @@ use crate::package::Package;
 
 fn create_client() -> Client {
     Client::builder()
-        .proxy(Proxy::https("http://127.0.0.1:10809").unwrap())
         .build()
         .unwrap()
 }
