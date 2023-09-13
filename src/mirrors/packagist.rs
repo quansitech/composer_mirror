@@ -86,7 +86,7 @@ impl<'a> Packagist<'a> {
         bucket_name: &'a str,
     ) -> Self {
         Self {
-            packages_meta_url_template: "https://packagist.kr/p2/%package%.json",
+            packages_meta_url_template: "https://packagist.org/p2/%package%.json",
             object_template: "%package%/%version%/%reference%.%dist_type%",
             domain,
             access_key,
