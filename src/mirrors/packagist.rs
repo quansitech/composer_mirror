@@ -1,5 +1,4 @@
 use axum::{
-    body::{Bytes, StreamBody},
     http::{HeaderMap, HeaderName, HeaderValue},
     response::{IntoResponse, Response}
 };
@@ -11,7 +10,7 @@ use qiniu_sdk::{
     },
     ureq::http::AsyncResponseBody,
 };
-use reqwest::{Client, header::TRANSFER_ENCODING, Response as ReqwestResponse, StatusCode};
+use reqwest::{Client, Response as ReqwestResponse, StatusCode};
 use serde_json::Value;
 use std::time::Duration;
 
@@ -41,22 +40,10 @@ async fn head(url: &str) -> Result<ReqwestResponse, reqwest::Error> {
 async fn proxy(url: &str) -> Response {
     let reqwest_response = get(url).await;
 
-    let mut resp_headers = reqwest_response.headers().clone();
-    resp_headers.remove(TRANSFER_ENCODING);
+    let resp_headers = reqwest_response.headers().clone();
+    let body = reqwest_response.text().await.unwrap();
 
-    let stream = reqwest_response.bytes_stream().map(|i| {
-        match i {
-            Ok(chunk) => Ok(Bytes::from(chunk.to_vec())),
-            Err(_) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "stream error",
-            )),
-        }
-    });
-
-    //let resp_body = Body::wrap_stream(stream);
-
-    (StatusCode::OK, resp_headers, StreamBody::new(stream)).into_response()
+    (StatusCode::OK, resp_headers, body).into_response()
 }
 
 fn redirect(url: &str) -> Response {
