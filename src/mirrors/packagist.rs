@@ -11,7 +11,7 @@ use qiniu_sdk::{
     },
     ureq::http::AsyncResponseBody,
 };
-use reqwest::{Client, Proxy, Response as ReqwestResponse, StatusCode};
+use reqwest::{Client, Response as ReqwestResponse, StatusCode};
 use serde_json::Value;
 use std::time::Duration;
 
