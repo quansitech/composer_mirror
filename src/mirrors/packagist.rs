@@ -1,7 +1,7 @@
 use axum::{
-    body::{boxed, StreamBody},
+    body::{Bytes, StreamBody},
     http::{HeaderMap, HeaderName, HeaderValue},
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Response}
 };
 use futures::StreamExt;
 use qiniu_sdk::{
@@ -11,7 +11,7 @@ use qiniu_sdk::{
     },
     ureq::http::AsyncResponseBody,
 };
-use reqwest::{Client, Proxy, Response as ReqwestResponse, StatusCode};
+use reqwest::{Client, header::TRANSFER_ENCODING, Response as ReqwestResponse, StatusCode};
 use serde_json::Value;
 use std::time::Duration;
 
@@ -40,13 +40,23 @@ async fn head(url: &str) -> Result<ReqwestResponse, reqwest::Error> {
 
 async fn proxy(url: &str) -> Response {
     let reqwest_response = get(url).await;
-    let mut response_builder = Response::builder().status(reqwest_response.status());
 
-    *response_builder.headers_mut().unwrap() = reqwest_response.headers().clone();
+    let mut resp_headers = reqwest_response.headers().clone();
+    resp_headers.remove(TRANSFER_ENCODING);
 
-    response_builder
-        .body(boxed(StreamBody::new(reqwest_response.bytes_stream())))
-        .unwrap()
+    let stream = reqwest_response.bytes_stream().map(|i| {
+        match i {
+            Ok(chunk) => Ok(Bytes::from(chunk.to_vec())),
+            Err(_) => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "stream error",
+            )),
+        }
+    });
+
+    //let resp_body = Body::wrap_stream(stream);
+
+    (StatusCode::OK, resp_headers, StreamBody::new(stream)).into_response()
 }
 
 fn redirect(url: &str) -> Response {
@@ -76,7 +86,7 @@ impl<'a> Packagist<'a> {
         bucket_name: &'a str,
     ) -> Self {
         Self {
-            packages_meta_url_template: "https://packagist.org/p2/%package%.json",
+            packages_meta_url_template: "https://packagist.kr/p2/%package%.json",
             object_template: "%package%/%version%/%reference%.%dist_type%",
             domain,
             access_key,
@@ -241,5 +251,24 @@ mod tests {
             .await;
         println!("{:#?}", res);
         assert_eq!(Some(&vec![Value::Bool(true)]), Some(&vec![Value::Null]));
+    }
+
+    #[tokio::test]
+    async fn proxy_test() {
+        let url = "https://packagist.kr/p2/%package%.json".replace("%package%", "tiderjian/think-core");
+        let client = create_client();
+
+        let reqwest_response = client.get(url)
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.69")
+            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+            .header("Accept-Encoding", "gzip, deflate, br")
+            .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+            .header("Cache-Control", "no-cache")
+            .header("Pragma", "no-cache")
+            .send().await.unwrap();
+
+        println!("{:#?}", reqwest_response.headers());
+
+        assert_eq!(1, 2);
     }
 }
