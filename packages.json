@@ -6,7 +6,7 @@
     "metadata-url": "/p2/%package%.json",
     "mirrors": [
         {
-            "dist-url": "http://test.tunnel.t4tstudio.com/dists/%package%/%prettyVersion%/%reference%.%type%",
+            "dist-url": "/dists/%package%/%prettyVersion%/%reference%.%type%",
             "preferred": true
         }
     ],
