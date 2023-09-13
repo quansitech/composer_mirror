@@ -12,6 +12,7 @@ use reqwest::StatusCode;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use dotenv::dotenv;
 
 mod dist;
 mod mirrors;
@@ -34,6 +35,8 @@ struct Config<'a> {
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
     let mut packages = String::new();
     let mut packages_file = OpenOptions::new()
         .read(true)
@@ -67,7 +70,8 @@ async fn main() {
         .layer(Extension(config));
 
     // run it with hyper on localhost:3000
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+    let listen = format!("0.0.0.0:{}", env::var("PORT").unwrap());
+    axum::Server::bind(&listen.parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
