@@ -37,10 +37,13 @@ struct Config<'a> {
 async fn main() {
     dotenv().ok();
 
+    let current_dir = env::current_dir().expect("无法获取当前目录");
+    let file_path = current_dir.join("packages.json");
+
     let mut packages = String::new();
     let mut packages_file = OpenOptions::new()
         .read(true)
-        .open("./packages.json")
+        .open(&file_path)
         .unwrap();
 
     packages_file.read_to_string(&mut packages).unwrap();
