@@ -220,7 +220,7 @@ mod tests {
             .object_name(object_name)
             .file_name(object_name)
             .build();
-        let reqwest_response = get("https://api.github.com/repos/egulias/EmailValidator/zipball/3a85486b709bc384dae8eb78fb2eec649bdb64ff").await;
+        let reqwest_response = get("https://api.github.com/repos/quansitech/think-core/zipball/35c34ca5af137fa28b151de5b0d839d51c4a1fa9").await;
         let mut buffer = Vec::new();
         let bytes_read = async {
             let mut stream = reqwest_response.bytes_stream();
