@@ -8,15 +8,16 @@ use axum::{
 use glob::Pattern;
 use std::sync::Arc;
 
+use dotenv::dotenv;
 use reqwest::StatusCode;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use dotenv::dotenv;
 
 mod dist;
 mod mirrors;
 mod package;
+mod request_helper;
 
 use crate::dist::Dist;
 use crate::mirrors::aliyun::Aliyun;
@@ -27,7 +28,7 @@ use crate::package::Package;
 #[derive(Clone)]
 struct Config<'a> {
     packages: String,
-    package_white_list: Vec<&'a str>,
+    package_white_list: Vec<String>,
     tenecnt_mirror: Tencent<'a>,
     aliyun_mirror: Aliyun<'a>,
     packagist_mirror: Packagist<'a>,
@@ -45,17 +46,18 @@ async fn main() {
 
     packages_file.read_to_string(&mut packages).unwrap();
 
-    let domain = Box::leak(env::var("DOMAIN").unwrap().into_boxed_str());
-    let access_key = Box::leak(env::var("ACCESS_KEY").unwrap().into_boxed_str());
-    let secret_key = Box::leak(env::var("SECRET_KEY").unwrap().into_boxed_str());
-    let bucket = Box::leak(env::var("BUCKET").unwrap().into_boxed_str());
+    let package_white_list = env::var("PACKAGE_WHITE_LIST")
+        .unwrap()
+        .split(",")
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
 
     let config = Arc::new(Config {
         packages,
         tenecnt_mirror: Tencent::new(),
         aliyun_mirror: Aliyun::new(),
-        packagist_mirror: Packagist::new(domain, access_key, secret_key, bucket),
-        package_white_list: vec!["tiderjian/*", "quansitech/*"],
+        packagist_mirror: Packagist::new(),
+        package_white_list,
     });
 
     // build our application with a single route
@@ -136,7 +138,7 @@ async fn package_meta<'a>(
     }
 }
 
-fn check_package_in_white_list(package: &str, white_list: &Vec<&str>) -> bool {
+fn check_package_in_white_list(package: &str, white_list: &Vec<String>) -> bool {
     for pattern in white_list {
         if Pattern::new(pattern).unwrap().matches(package) {
             return true;
