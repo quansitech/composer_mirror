@@ -62,7 +62,6 @@ async fn main() {
 
     // build our application with a single route
     let app = Router::new()
-        //.route("/demo/:package", get(get_package).with_state(&config).with_state(client))
         .route("/p2/*package_path", get(package_meta))
         .route(
             "/dists/:package1/:package2/:version/:reference_and_type",
