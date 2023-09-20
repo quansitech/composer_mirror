@@ -40,7 +40,7 @@ impl<'a> Packagist<'a> {
                     .run()
                     .await
             }
-            2 => CacheThirdSiteStrategy::new(dist).run().await,
+            2 => CacheThirdSiteStrategy::new(dist, self.packages_meta_url_template.to_string()).run().await,
             _ => panic!("Unknown strategy"),
         }
     }
