@@ -21,7 +21,7 @@ impl<'a> Tencent<'a> {
         }
     }
 
-    fn get_dist_url(&self, dist: &Dist) -> String {
+    pub fn get_dist_url(&self, dist: &Dist) -> String {
         let combine = format!("{}/{}", dist.package.full_name, dist.version).replace("/", "-");
         self.dist_url_template
             .replace("%package%", &dist.package.full_name)

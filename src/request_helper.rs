@@ -2,6 +2,7 @@ use axum::{
     http::{HeaderMap, HeaderName, HeaderValue},
     response::{IntoResponse, Response},
 };
+use futures::StreamExt;
 use reqwest::{Client, Response as ReqwestResponse, StatusCode};
 
 pub fn create_client() -> Client {
@@ -20,6 +21,52 @@ pub async fn head(url: &str) -> Result<ReqwestResponse, reqwest::Error> {
     let client = create_client();
 
     client.head(url).send().await
+}
+
+pub async fn speed_test(url: String) -> Option<(String, u128)> {
+
+    let response = head(&url).await;
+    match response {
+        Ok(response) => {
+            if response.status() == StatusCode::OK {
+                let req_response: ReqwestResponse = get(&url).await;
+
+                let start = std::time::Instant::now();
+                let mut buffer = Vec::new();
+                let bytes_read = async {
+                    let mut stream = req_response.bytes_stream();
+                    loop {
+                        let item = match stream.next().await {
+                            Some(item) => item,
+                            None => break,
+                        };
+                        let item = match item {
+                            Ok(item) => item,
+                            Err(_) => break,
+                        };
+                        if item.len() == 0 {
+                            break;
+                        }
+                        buffer.extend(item);
+
+                        if buffer.len() > 1024 * 80 {
+                            break;
+                        }
+                    }
+                    Ok::<_, reqwest::Error>(buffer)
+                };
+                bytes_read.await.unwrap();
+                let end = std::time::Instant::now();
+                Some((url, (end - start).as_millis()))
+            } else {
+                None
+            }
+            
+        }
+        Err(_) => None,
+    }
+
+    
 }
 
 pub async fn proxy(url: &str) -> Response {

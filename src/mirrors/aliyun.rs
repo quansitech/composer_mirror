@@ -22,7 +22,7 @@ impl<'a> Aliyun<'a> {
         }
     }
 
-    fn get_dist_url(&self, dist: &Dist) -> String {
+    pub fn get_dist_url(&self, dist: &Dist) -> String {
         self.dist_url_template
             .replace("%package%", &dist.package.full_name)
             .replace("%reference%", &dist.reference)

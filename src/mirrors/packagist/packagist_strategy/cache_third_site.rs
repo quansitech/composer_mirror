@@ -6,7 +6,10 @@ use reqwest::StatusCode;
 use std::env;
 use serde_json::Value;
 
-use crate::dist::Dist;
+use tokio::task;
+use tokio::select;
+
+use crate::{dist::Dist, mirrors::tencent::Tencent, mirrors::aliyun::Aliyun};
 use crate::request_helper;
 
 pub struct CacheThirdSiteStrategy<'a> {
@@ -66,19 +69,44 @@ impl<'a> CacheThirdSiteStrategy<'a> {
 
 
     pub async fn run(&self) -> Response {
+        let mut urls = Vec::new();
+        let source_url = self.get_tag_url().await;
         for site in self.cache_site_list.iter() {
-            let url = format!("{}/{}", site, self.get_tag_url().await);
-            let response = request_helper::head(&url).await;
+            let url = format!("{}/{}", site, source_url);
+            urls.push(url);
+        }
 
-            match response {
-                Ok(response) => {
-                    if response.status() == StatusCode::OK {
-                        return request_helper::redirect(&url);
+        let tencent_mirror = Tencent::new();
+        urls.push(tencent_mirror.get_dist_url(&self.dist_url_params));
+
+        let aliyun_mirror = Aliyun::new();
+        urls.push(aliyun_mirror.get_dist_url(&self.dist_url_params));
+        
+        let mut tasks = Vec::new();
+        for url in urls {
+            let task = task::spawn(request_helper::speed_test(url));
+            tasks.push(task);
+        }
+
+        let res;
+        loop{
+            select!(
+                result = futures::future::select_all(tasks) => {
+                    let (finished_result, _, remaining_tasks) = result;
+                    if remaining_tasks.len() == 0 {
+                        res = (StatusCode::NOT_FOUND, HeaderMap::new(), "").into_response();
+                        break;
+                    }
+
+                    tasks = remaining_tasks;
+
+                    if let Ok(Some((url, _))) = finished_result {
+                        res = request_helper::redirect(&url);
+                        break;
                     }
                 }
-                Err(_) => {}
-            }
+            )
         }
-        (StatusCode::NOT_FOUND, HeaderMap::new(), "").into_response()
+        res
     }
 }

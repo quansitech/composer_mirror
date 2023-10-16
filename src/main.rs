@@ -6,7 +6,7 @@ use axum::{
     Extension, Router,
 };
 use glob::Pattern;
-use std::sync::Arc;
+use std::{sync::Arc};
 
 use dotenv::dotenv;
 use reqwest::StatusCode;
@@ -26,12 +26,9 @@ use crate::mirrors::tencent::Tencent;
 use crate::package::Package;
 
 #[derive(Clone)]
-struct Config<'a> {
+struct Config {
     packages: String,
-    package_white_list: Vec<String>,
-    tenecnt_mirror: Tencent<'a>,
-    aliyun_mirror: Aliyun<'a>,
-    packagist_mirror: Packagist<'a>,
+    package_white_list: Vec<String>
 }
 
 #[tokio::main]
@@ -54,13 +51,9 @@ async fn main() {
 
     let config = Arc::new(Config {
         packages,
-        tenecnt_mirror: Tencent::new(),
-        aliyun_mirror: Aliyun::new(),
-        packagist_mirror: Packagist::new(),
-        package_white_list,
+        package_white_list
     });
 
-    // build our application with a single route
     let app = Router::new()
         .route("/p2/*package_path", get(package_meta))
         .route(
@@ -70,7 +63,6 @@ async fn main() {
         .route("/packages.json", get(packages_meta))
         .layer(Extension(config));
 
-    // run it with hyper on localhost:3000
     let listen = format!("0.0.0.0:{}", env::var("PORT").unwrap());
     axum::Server::bind(&listen.parse().unwrap())
         .serve(app.into_make_service())
@@ -80,24 +72,35 @@ async fn main() {
 
 async fn dist_dispatcher<'a>(
     Path((package1, package2, version, reference_and_type)): Path<(String, String, String, String)>,
-    config: Extension<Arc<Config<'a>>>,
+    config: Extension<Arc<Config>>,
 ) -> Response {
     let reference = reference_and_type.split(".").collect::<Vec<&str>>()[0];
     let dist_type = reference_and_type.split(".").collect::<Vec<&str>>()[1];
     let package = Package::new(&package1, &package2);
     let dist = Dist::new(&package, &version, reference, dist_type);
 
-    match config.tenecnt_mirror.check_dist(&dist).await {
-        true => config.tenecnt_mirror.make_dist_response(&dist).await,
-        false => match config.aliyun_mirror.check_dist(&dist).await {
-            true => config.aliyun_mirror.make_dist_response(&dist).await,
-            false => config.packagist_mirror.make_dist_response(&dist).await,
-        },
+    let packagist_mirror = Packagist::new();
+    let tenecnt_mirror = Tencent::new();
+    let aliyun_mirror = Aliyun::new();
+
+    match check_package_in_white_list(&format!("{}/{}", package1, package2), &config.package_white_list) {
+        true => {
+            packagist_mirror.make_dist_response(&dist).await
+        }
+        false => {
+            match tenecnt_mirror.check_dist(&dist).await {
+                true => tenecnt_mirror.make_dist_response(&dist).await,
+                false => match aliyun_mirror.check_dist(&dist).await {
+                    true => aliyun_mirror.make_dist_response(&dist).await,
+                    false => packagist_mirror.make_dist_response(&dist).await,
+                }
+            }
+        }
     }
 }
 
 async fn packages_meta<'a>(
-    config: Extension<Arc<Config<'a>>>,
+    config: Extension<Arc<Config>>,
 ) -> (StatusCode, HeaderMap, Html<String>) {
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -110,7 +113,7 @@ async fn packages_meta<'a>(
 
 async fn package_meta<'a>(
     Path(package_path): Path<String>,
-    config: Extension<Arc<Config<'a>>>,
+    config: Extension<Arc<Config>>,
 ) -> Response {
     let headers = HeaderMap::new();
     if !package_path.ends_with(".json") {
@@ -123,14 +126,12 @@ async fn package_meta<'a>(
 
     match check_package_in_white_list(&package_combine, &config.package_white_list) {
         true => {
-            config
-                .packagist_mirror
+            Packagist::new()
                 .make_package_response(&Package::new(vendor, package))
                 .await
         }
         false => {
-            config
-                .tenecnt_mirror
+            Tencent::new()
                 .make_package_response(&Package::new(vendor, package))
                 .await
         }
