@@ -6,7 +6,6 @@ use axum::{
     Extension, Router,
 };
 use glob::Pattern;
-use std::{sync::Arc};
 
 use dotenv::dotenv;
 use reqwest::StatusCode;
@@ -49,10 +48,10 @@ async fn main() {
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
 
-    let config = Arc::new(Config {
+    let config = Config {
         packages,
         package_white_list
-    });
+    };
 
     let app = Router::new()
         .route("/p2/*package_path", get(package_meta))
@@ -72,7 +71,7 @@ async fn main() {
 
 async fn dist_dispatcher<'a>(
     Path((package1, package2, version, reference_and_type)): Path<(String, String, String, String)>,
-    config: Extension<Arc<Config>>,
+    config: Extension<Config>,
 ) -> Response {
     let reference = reference_and_type.split(".").collect::<Vec<&str>>()[0];
     let dist_type = reference_and_type.split(".").collect::<Vec<&str>>()[1];
@@ -100,7 +99,7 @@ async fn dist_dispatcher<'a>(
 }
 
 async fn packages_meta<'a>(
-    config: Extension<Arc<Config>>,
+    config: Extension<Config>,
 ) -> (StatusCode, HeaderMap, Html<String>) {
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -113,7 +112,7 @@ async fn packages_meta<'a>(
 
 async fn package_meta<'a>(
     Path(package_path): Path<String>,
-    config: Extension<Arc<Config>>,
+    config: Extension<Config>,
 ) -> Response {
     let headers = HeaderMap::new();
     if !package_path.ends_with(".json") {
