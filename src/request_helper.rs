@@ -71,10 +71,9 @@ pub async fn speed_test(url: String) -> Option<(String, u128)> {
 
 pub async fn proxy(url: &str) -> Response {
     let reqwest_response = get(url).await;
-
+    
     let resp_headers = reqwest_response.headers().clone();
-    let body = reqwest_response.text().await.unwrap();
-
+    let body: String = reqwest_response.text().await.unwrap();
     (StatusCode::OK, resp_headers, body).into_response()
 }
 

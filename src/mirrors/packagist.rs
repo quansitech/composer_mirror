@@ -13,25 +13,25 @@ use self::packagist_strategy::{
 };
 
 #[derive(Clone)]
-pub struct Packagist<'a> {
-    packages_meta_url_template: &'a str,
+pub struct Packagist{
+    packages_meta_url_template: String,
 }
 
-impl<'a> Packagist<'a> {
+impl Packagist{
     pub fn new() -> Self {
         Self {
-            packages_meta_url_template: "https://packagist.kr/p2/%package%.json",
+            packages_meta_url_template: env::var("PACKAGES_META_URL_TEMPLATE").unwrap(),
         }
     }
 
-    pub async fn make_package_response(&self, package: &Package<'a>) -> Response {
+    pub async fn make_package_response<'a>(&self, package: &Package<'a>) -> Response {
         let url = self
             .packages_meta_url_template
             .replace("%package%", &package.full_name);
         request_helper::proxy(&url).await
     }
 
-    pub async fn make_dist_response(&self, dist: &Dist<'a>) -> Response {
+    pub async fn make_dist_response<'a>(&self, dist: &Dist<'a>) -> Response {
         let strategy: i32 = env::var("PACKAGIST_STRATEGY").unwrap().parse().unwrap();
 
         match strategy {
