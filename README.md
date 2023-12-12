@@ -20,6 +20,8 @@
 PORT=3000 # 服务监听端口
 
 PACKAGE_WHITE_LIST=tiderjian/*,quansitech/*  # 需要实时更新的扩展白名单，支持 * 泛型匹配，也可以用*/*，表示所有包要实时更新
+PACKAGES_META_URL_TEMPLATE=http://packagist.kr/p2/%package%.json # packagist的元数据地址，%package%会被替换成扩展名
+
 PACKAGIST_STRATEGY=2   # 扩展更新策略 1: 自己搭建存储系统, 2: 使用第三方加速地址
 # 策略1 需要提供七牛云存储相关参数
 DOMAIN= # 七牛云存储的自定义域名
